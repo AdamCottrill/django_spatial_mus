@@ -46,33 +46,40 @@ class FN011Serializer(serializers.ModelSerializer):
 
 
 class FN121Serializer(serializers.ModelSerializer):
-    #mu/area will be dynamically added to serializer
+    # mu/area will be dynamically added to serializer
     #
+
+    area = serializers.SerializerMethodField()
+
     class Meta:
         model = FN121
         fields = [
+            "area",
             "id",
-            #project
-            'grtp',
-            'grm',
-            'slug',
-            'sam',
-            'effdt0',
-            'effdt1',
-            'effdur',
-            'efftm0',
-            'efftm1',
-            'effst',
-            'orient',
-            'sidep',
-            'secchi',
-            'site',
-            'sitem ',
-            'dd_lat',
-            'dd_lon',
-            'comment1'
-            #geom
+            # project
+            "grtp",
+            "gr",
+            "slug",
+            "sam",
+            "effdt0",
+            "effdt1",
+            "effdur",
+            "efftm0",
+            "efftm1",
+            "effst",
+            "orient",
+            "sidep",
+            "secchi",
+            "site",
+            "sitem",
+            "dd_lat",
+            "dd_lon",
+            "comment1"
+            # geom
         ]
 
-
-
+    def get_area(self, obj):
+        if obj.mu:
+            return obj.mu[0].slug
+        else:
+            return None

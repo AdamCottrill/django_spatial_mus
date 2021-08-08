@@ -1,12 +1,14 @@
 # from django.shortcuts import render
+from django.db.models import Prefetch
 from rest_framework import generics
 
-from spatial_mus.models import ManagementUnit
-
 from .models import FN011, FN121, ManagementUnit, ManagementUnitType
-from .serializers import (FN011Serializer, FN121Serializer,
-                          ManagementUnitSerializer,
-                          ManagementUnitTypeSerializer)
+from .serializers import (
+    FN011Serializer,
+    FN121Serializer,
+    ManagementUnitSerializer,
+    ManagementUnitTypeSerializer,
+)
 
 
 class ManagementUnitTypeList(generics.ListAPIView):
@@ -15,13 +17,13 @@ class ManagementUnitTypeList(generics.ListAPIView):
 
 
 class ManagementUnitList(generics.ListAPIView):
-    #filter by lake, mu_type, primary
+    # filter by lake, mu_type, primary
     queryset = ManagementUnit.objects.all()
     serializer_class = ManagementUnitSerializer
 
 
 class FN011List(generics.ListAPIView):
-    #filter by:
+    # filter by:
     #  mu - all in, some points in
     #  roi - all in, some points in
 
@@ -31,5 +33,25 @@ class FN011List(generics.ListAPIView):
 
 class FN121List(generics.ListAPIView):
     # filter by mu, year, prj_cd, prj_cd__like, roi
-    queryset = FN121.objects.all()
     serializer_class = FN121Serializer
+
+    def get_queryset(self):
+        """Prefetch the appropriate management units depending on the value of
+        mu_type. If mu_type is null, use default management unit type (which can
+        be different by lake.  Defer the management unit geom field - we don't
+        need here and it is expensive to deal with."""
+
+        mu_type = self.request.query_params.get("mu_type")
+        if mu_type:
+            mus = ManagementUnit.objects.filter(mu_type__abbrev=mu_type).defer("geom")
+        else:
+            mus = ManagementUnit.objects.filter(primary=True).defer("geom")
+
+        prefetch = Prefetch("management_units", queryset=mus, to_attr="mu")
+        queryset = (
+            FN121.objects.select_related("project")
+            .prefetch_related(prefetch)
+            .filter(project__prj_cd__endswith="83_003")
+            .all()
+        )
+        return queryset
