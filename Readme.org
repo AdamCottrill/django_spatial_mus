@@ -1,0 +1,5 @@
+* Spatial_mus
+
+  Spatial_mus is a simple Django application that is essentially just
+  a sandbox to demonstrate how spatial attributes of a point can be
+  dynamically returned.
